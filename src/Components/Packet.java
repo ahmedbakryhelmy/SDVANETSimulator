@@ -19,6 +19,8 @@ public class Packet {
 		this.setSize(size);
 		
 	}
+	
+	
 	public int getId() {
 		return id;
 	}

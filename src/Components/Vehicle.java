@@ -11,18 +11,75 @@ import umontreal.iro.lecuyer.simevents.Sim;
 
 public class Vehicle{
 
-private NodeID id;
-private int type;
-private NodeID controllerID;
-private Domain domain;
-private ArrayList <Route> routingTable;
+NodeID id;
+int type;
+NodeID controllerID;
+Domain domain;
+ArrayList <Route> routingTable;
+Queue<Packet> dataPackets;
+Queue<Packet> routingPackets;
+ArrayList<DomainVehicleTuple> reachableDomains;
+int CW;
+final int CWmax = 16;
+final double slotDuration = 0.02; // 20 micro second
+final double SIFS = 0.01;
+final double AIFS = 0.02;
+final double DIFS = 0.05;
+final double txDataFrame = 1;
+final double txAck = 0.25;
+final double propagationDelay = 0;
+final double txRoutePacket = 0.4;
+final double interferenceRange = 3;
 
-private Queue<Packet> dataPackets;
 
-private Queue<Packet> routingPackets;
+public boolean canSend() {
+	
+	
+	for(int i = 0; i<Scenario.sendingNodes.size();i++) {
+		NodeID n = Scenario.sendingNodes.get(i);
+		if (Math.abs(this.id.x -n.x) == interferenceRange || Math.abs(this.id.y -n.y) == interferenceRange) {
+			return false;
+		}
+	}
+	
+	return true;
+}
 
-private ArrayList<DomainVehicleTuple> reachableDomains;
+// removing the vehicle from the list of sending nodes when transmission is over
+class StopSending extends Event {
+	
+	NodeID nodeId;
+	public StopSending(NodeID nodeId)
+	{
+		super();
+		this.nodeId=nodeId;
+		
+	}
+	   public void actions() {
+		   
+		   for (int i = 0; i<Scenario.sendingNodes.size();i++) {
+			   if(Scenario.sendingNodes.get(i).equals(nodeId)) {
+				   Scenario.sendingNodes.remove(i);
+				   return;
+			   }
+		   }
+	      }
+	   }
 
+/*
+// return a route specified 
+public Route getRoute(NodeID nodeId) {
+	
+	for(int i = 0; i< routingTable.size();i++) {
+		if(routingTable.get(i).getNodeID().equals(nodeId)) {
+			return routingTable.get(i);
+		}
+	}
+	return null;
+	
+	
+}
+*/
 
 public Route isrouteAvailable(NodeID dest) {
 	
@@ -61,12 +118,84 @@ class PacketArrival extends Event {
       }
    }
 
+
+class sendRequestPathToGateways extends Event {
+	 ArrayList <Vehicle> destinations;
+	 RequestPathPacket requestPathPacket;
+	 sendRequestPathToGateways(RequestPathPacket requestPathPacket, ArrayList<Vehicle> destinations) {
+		 super();
+		 this.requestPathPacket = requestPathPacket;
+		 this.destinations= destinations;
+	}
+	 
+	   public void actions() {
+		   
+			 for(int i=0;i<destinations.size();i++) {
+				 Vehicle v  = destinations.get(i);
+				 v.receiveRequestpath(requestPathPacket);
+			 }
+
+	      }
+	   }
+
  class sendRequestPath extends Event {
 	
-	 sendRequestPath() {
-		
+	 int x =0;
+	 RequestPathPacket requestPathPacket;
+	 ArrayList <Vehicle> destinations;
+	 
+	 sendRequestPath(RequestPathPacket requestPathPacket, ArrayList<Vehicle> destinations) {
+		 super();
+		 this.requestPathPacket = requestPathPacket;
+		 this.destinations= destinations;
 	}
+	 
+	 public void backOff() {
+		 int slots = (int)(Math.random()*CW);
+		 x =0;
+		 this.schedule(slots*slotDuration);
+	 }
+	 	 
+	 public void sendPacket() {
+		 
+		 // send requestPathPacket to the destination nodes
+		 // add node to the list of sending nodes
+		 // schedule stopSending after the transmission is over
+		 
+		 Scenario.sendingNodes.add(id);
+		 new StopSending(id).schedule(txRoutePacket);
+		 new sendRequestPathToGateways(requestPathPacket, destinations).schedule(txRoutePacket);
+		 
+	 }
+	 
+	 // the MAC algorithm is implemented here
     public void actions() {
+    	
+    	if(x == 0) {
+    		if(canSend() == true) {
+    			x = 1;
+    			// wait for aifs
+    			this.schedule(AIFS);
+    			
+    		}else {
+
+    			backOff();
+    			
+    		}
+    		
+    	}else {
+    		x = 0;
+    		if(canSend() == true) {
+    			
+    			// node is allowed to send
+    			sendPacket();
+    			
+    		}else {
+    			backOff();
+    		}
+    		
+    		
+    	}
 
        }
     }
@@ -74,11 +203,45 @@ class PacketArrival extends Event {
 
  class sendDataPacket extends Event {
 	
+	 int x = 0;
 	 sendDataPacket() {
 		
 	}
+	 
+	 
+	 public void backOff() {
+		 int slots = (int)(Math.random()*CW);
+		 x =0;
+		 this.schedule(slots*slotDuration);
+	 }
+	 	 
     public void actions() {
+    	
+    	if(x == 0) {
+    		if(canSend() == true) {
+    			x = 1;
+    			// wait for aifs
+    			this.schedule(DIFS);
+    			
+    		}else {
 
+    			backOff();
+    			
+    		}
+    		
+    	}else {
+    		x = 0;
+    		if(canSend() == true) {
+    			
+    			// node is allowed to send
+    			
+    			
+    		}else {
+    			backOff();
+    		}
+    		
+    		
+    	}
        }
     }
  
@@ -103,15 +266,11 @@ class PacketArrival extends Event {
        }
     }
 
- class receiveRequestpath extends Event {
-	
-	 receiveRequestpath() {
-		
-	}
-    public void actions() {
-
-       }
-    }
+ public void receiveRequestpath(RequestPathPacket requestPathPacket) {
+	 
+	 
+ }
+ 
 
  class receiveDataPacket extends Event {
 	
@@ -154,70 +313,24 @@ class PacketArrival extends Event {
        }
     }
 
+ /*
+ class EndOfSim extends Event {
+     public void actions() {
+        Sim.stop();
+     }
+  }
  
-
-public NodeID getId() {
-	return id;
+ public void simulate (double timeHorizon) {
+     Sim.init();
+     new EndOfSim().schedule (timeHorizon);
+     new sendRequestPath().schedule(5);
+     Sim.start(); 
+ }
+public static void main (String [] args) {
+	Vehicle x = new Vehicle();
+	x.simulate(20);
 }
-
-public void setId(NodeID id) {
-	this.id = id;
-}
-
-
-public int getType() {
-	return type;
-}
-
-public void setType(int type) {
-	this.type = type;
-}
-
-
-public Domain getDomain() {
-	return domain;
-}
-
-public void setDomain(Domain domain) {
-	this.domain = domain;
-}
-
-
-public NodeID getControllerID() {
-	return controllerID;
-}
-
-public void setControllerID(NodeID controllerID) {
-	this.controllerID = controllerID;
-}
-
-
-public Queue<Packet> getDataPackets() {
-	return dataPackets;
-}
-
-public void setDataPackets(Queue<Packet> dataPackets) {
-	this.dataPackets = dataPackets;
-}
-
-
-public Queue<Packet> getRoutingPackets() {
-	return routingPackets;
-}
-
-public void setRoutingPackets(Queue<Packet> routingPackets) {
-	this.routingPackets = routingPackets;
-}
-
-
-public ArrayList<DomainVehicleTuple> getReachableDomains() {
-	return reachableDomains;
-}
-
-public void setReachableDomains(ArrayList<DomainVehicleTuple> reachableDomains) {
-	this.reachableDomains = reachableDomains;
-}
-
-
+*/
+ 
 
 }
