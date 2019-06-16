@@ -1,5 +1,6 @@
 package Components;
 import DataTypes.NodeID;
+import DataTypes.Route;
 
 public class Packet {
 
@@ -9,7 +10,9 @@ public class Packet {
 	private NodeID destinationNode;
 	private int size;
 	private double generationTime;
-	public Packet(	int id, int type, NodeID sourceNode, NodeID destinationNode, int size, double generationTime) {
+	private Route route;
+	private int hops;
+	public Packet(int id, int type, NodeID sourceNode, NodeID destinationNode, int size, double generationTime) {
 	
 		this.setId(id);
 		this.setDestinationNode(destinationNode);
@@ -17,6 +20,7 @@ public class Packet {
 		this.setType(type);
 		this.setSourceNode(sourceNode);
 		this.setSize(size);
+		this.setHops(0);
 		
 	}
 	
@@ -56,6 +60,26 @@ public class Packet {
 	}
 	public void setGenerationTime(double generationTime) {
 		this.generationTime = generationTime;
+	}
+
+
+	public Route getRoute() {
+		return route;
+	}
+
+
+	public void setRoute(Route route) {
+		this.route = route;
+	}
+
+
+	public int getHops() {
+		return hops;
+	}
+
+
+	public void setHops(int hops) {
+		this.hops = hops;
 	}
 	
 }

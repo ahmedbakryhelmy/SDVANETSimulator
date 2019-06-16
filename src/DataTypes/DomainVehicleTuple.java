@@ -5,19 +5,30 @@ import Components.Vehicle;
 public class DomainVehicleTuple {
 
 	
-	private Domain domain;
-	private ArrayList<Vehicle> vehicles;
+	private Vehicle vehicle;
+	private ArrayList<Domain> domains;
 	
-	public Domain getDomain() {
-		return domain;
+	public DomainVehicleTuple(Vehicle vehicle,ArrayList<Domain> domains ) {
+		
+		this.domains = domains;
+		this.vehicle = vehicle;
 	}
-	public void setDomain(Domain domain) {
-		this.domain = domain;
+	
+
+
+	
+	public Vehicle getVehicle() {
+		return vehicle;
 	}
-	public ArrayList<Vehicle> getVehicles() {
-		return vehicles;
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
 	}
-	public void setVehicles(ArrayList<Vehicle> vehicles) {
-		this.vehicles = vehicles;
+	public ArrayList<Domain> getDomains() {
+		return domains;
 	}
+	public void setDomains(ArrayList<Domain> domains) {
+		this.domains = domains;
+	}
+	
+	
 }
