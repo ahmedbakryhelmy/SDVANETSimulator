@@ -13,7 +13,7 @@ public class Scenario {
 static	ArrayList<NodeID> sendingNodes = new ArrayList<NodeID> ();
 static ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
 static int counter = 0;
-static int gatewaySelectionAlgorithm = 1; // 1 for the new one and 2 for the old one
+static int gatewaySelectionAlgorithm = 2; // 1 for the new one and 2 for the old one
 static int gatewaysFilter = 1;
 static double txDataBytes = 0;
 static double txDataPacketsDelay = 0;
@@ -115,7 +115,7 @@ public static Vehicle  initializeRoad() {
 		c00.neigbouringCars = new ArrayList<Vehicle> () {{ add(c12); add(c30);}};
 		c12.neigbouringCars = new ArrayList<Vehicle> () {{ add(c00); add(c30); add(c33);}};
 		c30.neigbouringCars = new ArrayList<Vehicle> () {{ add(c00); add(c12); add(c33);}};
-		c33.neigbouringCars = new ArrayList<Vehicle> () {{ add(c12); add(c30);}};
+		c33.neigbouringCars = new ArrayList<Vehicle> () {{ add(c12); add(c30); add(c43); add(c36); add(c45);}};
 		
 		c07.neigbouringCars = new ArrayList<Vehicle> () {{add(c16); add(c27); }};
 		c16.neigbouringCars = new ArrayList<Vehicle> () {{add(c07); add(c27); add(c36); }};
@@ -179,8 +179,8 @@ public static Vehicle  initializeRoad() {
 		
 		// route from c33 to c73
 		Route rc33 = new Route();
-		rc33.setNodeID(c73.id);
-		rc33.setRoute(new ArrayList<NodeID>() {{add(c43.id); add(c73.id);}});
+		rc33.setNodeID(c43.id);
+		rc33.setRoute(new ArrayList<NodeID>() {{add(c43.id);}});
 		c33.routingTable.add(rc33);
 		Route rc43 = new Route();
 		rc43.setNodeID(c73.id);
@@ -216,21 +216,25 @@ public static Vehicle  initializeRoad() {
 		
 		Sim.init();
 		//System.out.println(c33.canSend());
-		Scenario.sendingNodes.add(c52.id);
-		c52.test3();
 		//c12.testFunction(c12.id);
-		x.simulate(20);
+		x.simulate(50);
 		//c33.updateRoutingTable(c33.isrouteAvailable(c73.id));
 		DataPacket packet = new DataPacket(Scenario.counter++, 1, c12.id, c73.id, 1250 ,0);
 		DataPacket packet2 = new DataPacket(Scenario.counter++, 1, c12.id, c73.id, 1250 ,3);
+		DataPacket packet3 = new DataPacket(Scenario.counter++, 1, c12.id, c73.id, 1250 ,6);
 		//packet.setRoute(c33.isrouteAvailable(c73.id));
 		c12.testing(0, packet);
 		c12.testing(3, packet2);
+		c12.testing(20, packet3);
 		//c33.testing(0.002);
 		
 	    Sim.start(); 
-	    
-	    System.out.println(c12.isrouteAvailable(c73.id));
+	 /*   
+		ArrayList<Vehicle> v = c33.selectGateways2(1);
+		for(int i = 0; i< v.size();i++) {
+			 System.out.println("Vehicle "+v.get(i)+"    "+ v.get(i).reachableDomains.size());
+		}
+	   */
 		//System.out.println(c73.equals(c73));
 	    
 		

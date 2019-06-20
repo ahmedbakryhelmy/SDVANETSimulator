@@ -31,7 +31,7 @@ final double DIFS = 0.00005;
 final double txDataPacket = 0.4; // 400 ms
 final double txAck = 0.00025; // 250 ms
 final double propagationDelay = 0;
-final double txRoutePacket = 0.05; //50 msec
+final double txRoutePacket = 0.1; //50 msec
 final double interferenceRange = 3;
 
 public Vehicle(NodeID id, NodeID controllerID) {
@@ -104,15 +104,6 @@ public void testing(double t, DataPacket p) {
 	p.setGenerationTime(t);
 	new sendDataPacket(p).schedule(t);
 }
-public void test3 () {
-	new StopSending(id).schedule(0.8);
-}
-class test2 extends Event {
-    public void actions() {
-    	
-      // System.out.println();
-    }
- }
 
 
 // compare two vehicles using their IDs
@@ -134,11 +125,11 @@ public Route isrouteAvailable(NodeID dest) {
 	
 		Route r = this.routingTable.get(i);
 		if(r.getNodeID().equals(dest)) {
-			//System.out.println("Node (" + dest.x + ", "+ dest.y + ") route available for node "+ id.x + ", "+ id.y + ")");
+			System.out.println("Route is available for destination "+ "(" + dest.x + ", "+ dest.y + ")"+" at node (" + id.x + ", "+ id.y + ")");
 			return r;
 		}
 	}
-	System.out.println("Node (" + dest.x + ", "+ dest.y + ") route not available by (" + id.x + ", "+ id.y + ")");
+	System.out.println("Route is not available for destination "+ "(" + dest.x + ", "+ dest.y + ")"+" at node (" + id.x + ", "+ id.y + ")");
 	return null;
 }
 
@@ -146,16 +137,17 @@ public void updateRoutingTable(Route route) {
 	
 	for(int i =0; i<this.routingTable.size(); i++) {
 		Route r = this.routingTable.get(i);
-		System.out.println(r);
-		System.out.println(route);
+		//System.out.println(r);
+		//System.out.println(route);
 		if(r.getNodeID().equals(route.getNodeID())) {
 			this.routingTable.remove(r);
-			System.out.println("Route found");
+			// System.out.println("Route found");
 			break;
 		}
 	}
 	
-	System.out.println("updating routing table"+ "(" + id.x + ", "+ id.y + ")");
+	System.out.println("Updating routing table at node "+ "(" + id.x + ", "+ id.y + ")");
+	new routeExpiry(route).schedule(8);
 	this.routingTable.add(route);
 	
 }
@@ -201,10 +193,10 @@ class sendDataPacketToDestination extends Event {
 	}
 	 
 	   public void actions() {
-		   System.out.println("sendDataPacketToDestination" + "(" + id.x + ", "+ id.y + ")");
-		   
+		     
 		   // send packet to next hop 
 		   Vehicle v = Scenario.getVehicle(route.getRoute().get(0));
+		   System.out.println("sendDataPacketToDestination from " + "(" + id.x + ", "+ id.y + ")"+ "To "+ "(" + v.id.x + ", "+ v.id.y + ")");
 		   //packet.setHops(packet.getHops()+1);
 		   v.receiveDataPacket(packet);
 
@@ -235,7 +227,7 @@ class sendDataPacket extends Event {
 		 packet.setRoute(isrouteAvailable(packet.getDestinationNode()));
 		 new sendDataPacketToDestination(packet).schedule(txDataPacket);
 		 currentDataPacket = null;
-		 System.out.println("sendDataPacket/ sendPacket" + "(" + id.x + ", "+ id.y + ")");
+		 //System.out.println("sendDataPacket/ sendPacket from node " + "(" + id.x + ", "+ id.y + ")");
 		 CW = 4;
 		 
 	 }
@@ -244,7 +236,7 @@ class sendDataPacket extends Event {
 		 int slots = (int)(Math.random()*CW);
 		 x =0;
 		 CW*=2;
-		 System.out.println("Back off " + slots*slotDuration);
+		 System.out.println("Node "+ "(" + id.x + ", "+ id.y + ")"+ " will back off " + slots*slotDuration);
 		 this.schedule(slots*slotDuration);
 	 }
 	 	 
@@ -262,7 +254,7 @@ class sendDataPacket extends Event {
    			
    			RequestPathPacket requestPathPacket = new RequestPathPacket(packet.getId(), 2, id, packet.getDestinationNode(), 450, Sim.time());
    			new sendRequestPath(requestPathPacket, selectGateways()).schedule(0.0001);
-   			System.out.println("sendDataPacket/ no route and is a controller" + "(" + id.x + ", "+ id.y + ")");
+   			System.out.println("sendDataPacket/ no route and is a controller at " + "(" + id.x + ", "+ id.y + ")");
    			
    		}else {
    			
@@ -272,7 +264,7 @@ class sendDataPacket extends Event {
    			Vehicle v = Scenario.getVehicle(controllerID);
    			array.add(v);
    			new sendRequestPath(requestPathPacket, array).schedule(0.0001);
-   			System.out.println("sendDataPacket/ no route and not a controller" + "(" + id.x + ", "+ id.y + ")");
+   			System.out.println("sendDataPacket/ no route and not a controller at " + "(" + id.x + ", "+ id.y + ")");
    		}
    		
    	}else {
@@ -325,7 +317,7 @@ class sendRequestPathToGateways extends Event {
 	}
 	 
 	   public void actions() {
-		   System.out.println("sendRequestPathToGateways" + "(" + destinations.get(0).id.x + ", "+ destinations.get(0).id.y + ")");
+		   //System.out.println("sendRequestPathToGateways" + "(" + destinations.get(0).id.x + ", "+ destinations.get(0).id.y + ")");
 		   
 			 for(int i=0;i<destinations.size();i++) {
 				 Vehicle v  = destinations.get(i);
@@ -366,7 +358,7 @@ class sendRequestPathToGateways extends Event {
 		 Scenario.sendingNodes.add(id);
 		 new StopSending(id).schedule(txRoutePacket);
 		 new sendRequestPathToGateways(this.requestPathPacket, this.destinations).schedule(txRoutePacket);
-		 System.out.println("sendRequestPath/ sendPacket" + "(" + id.x + ", "+ id.y + ")");
+		 System.out.println("sendRequestPath/ sendPacket at node " + "(" + id.x + ", "+ id.y + ")");
 		 CW = 4;
 		 
 	 }
@@ -434,7 +426,7 @@ class sendRequestPathToGateways extends Event {
 		 Vehicle v = Scenario.getVehicle(controllerID);
 		 RouteUpdatePacket packet2 = new RouteUpdatePacket(packet.getId(), packet.getType(), packet.getSourceNode(), packet.getDestinationNode(), packet.getSize(), Sim.time(), packet.getRoute());
 		 packet2.setRoute(packet.getRoute());
-		 System.out.println("sendRouteUpdate/ sendPacket" + "(" + id.x + ", "+ id.y + ")"+ " route "+ packet2.getRoute());
+		 System.out.println("sendRouteUpdate/ sendPacket From node " + "(" + id.x + ", "+ id.y + ")"+ " To node "+ "(" + v.id.x + ", "+ v.id.y + ")");
 		 v.receiveRouteUpdate(packet2);
 		 
 		 CW = 4;
@@ -487,12 +479,28 @@ class sendRequestPathToGateways extends Event {
 	}
     public void actions() {
     	//System.out.println("testing    "+ isrouteAvailable(p.getDestinationNode()));
-    	System.out.println("sendRouteInfo" + "(" + id.x + ", "+ id.y + ")" + p.getRoute());
+    	
     	RouteInfoPacket packet = new RouteInfoPacket(p.getId(), p.getType(), p.getSourceNode(), p.getDestinationNode(), p.getSize(), Sim.time(), isrouteAvailable(p.getDestinationNode()));
     	packet.setRoute(p.getRoute());
     	Vehicle destination = Scenario.getVehicle(p.getSourceNode());
+    	System.out.println("sendRouteInfo From node " + "(" + id.x + ", "+ id.y + ")"+ " To node (" + destination.id.x + ", "+ destination.id.y + ")");
     	destination.receiveRouteInfo(packet);
     	
+
+       }
+    }
+ 
+ class routeExpiry extends Event {
+	 Route r;
+	 routeExpiry(Route r) {
+		
+		this.r=r;
+	}
+	
+    public void actions() {
+
+    	routingTable.remove(r);
+    	System.out.println("Route expired: "+ r+ "at node (" + id.x + ", "+ id.y + ")" + "at time: " + Sim.time());
 
        }
     }
@@ -503,13 +511,18 @@ class sendRequestPathToGateways extends Event {
 	 
 	 Scenario.totalRxRouteRequestPacket++;
 	 
+	 // to be checked
+	 if(Sim.time()-requestPathPacket.getGenerationTime() > 1) {
+		 return;
+	 }
+	 
 	 // process receive RequestPath
 	 
 	 if(isrouteAvailable(requestPathPacket.getDestinationNode())!=null) {
 		 
 		 if(this.id.equals(controllerID)) {
 			 
-			 System.out.print("receiveRequestpath....route available and node is the controller");
+			 System.out.println("receiveRequestpath....route available and node "+ "(" + id.x + ", "+ id.y + ")"+ " is the controller");
 			 
 			 // sends route info
 			 new SendRouteInfo(new RouteInfoPacket(requestPathPacket.getId(), requestPathPacket.getType(), requestPathPacket.getSourceNode(), requestPathPacket.getDestinationNode(), requestPathPacket.getSize(), Sim.time(), isrouteAvailable(requestPathPacket.getDestinationNode()))).schedule(txRoutePacket);
@@ -517,7 +530,7 @@ class sendRequestPathToGateways extends Event {
 			 
 		 }else {
 			 
-			 System.out.print("receiveRequestpath....route available and node is not the controller");
+			 System.out.println("receiveRequestpath....route available and node "+ "(" + id.x + ", "+ id.y + ")"+" is not the controller");
 			 
 			 // sends route update to controller 
 			 new sendRouteUpdate(requestPathPacket).schedule(txRoutePacket);
@@ -527,7 +540,7 @@ class sendRequestPathToGateways extends Event {
 		 
 		 if(this.id.equals(controllerID)) {
 			 
-			 System.out.print("receiveRequestpath....route not available and node is the controller");
+			 System.out.println("receiveRequestpath....route not available and node " + "(" + id.x + ", "+ id.y + ")"+" is the controller");
 			 
 			 // gateways selection
 			 // sends requestPath to set of gateways
@@ -540,7 +553,7 @@ class sendRequestPathToGateways extends Event {
 			 
 			 // message came from same domain
 			 if(Scenario.getVehicle(requestPathPacket.getSourceNode()).domain.equals(domain)) {
-				 System.out.print("receiveRequestpath....message came from the same domain");
+				 System.out.println("receiveRequestpath....message came from the same domain at node "+ "(" + id.x + ", "+ id.y + ")");
 				 
 				 // gateways selection
 				 // sends requestPath to set of gateways
@@ -549,8 +562,8 @@ class sendRequestPathToGateways extends Event {
 				 
 			 }else {
 				 
-				 System.out.print("receiveRequestpath....message came from a different domain");
-				 
+				 System.out.println("receiveRequestpath....message came from a different domain at node "+ "(" + id.x + ", "+ id.y + ")");
+				 System.out.println(requestPathPacket.getGenerationTime());
 				 // sends requestPath to controller
 				 Vehicle v = Scenario.getVehicle(controllerID);
 				 ArrayList<Vehicle> destinations = new ArrayList<Vehicle>();
@@ -649,11 +662,19 @@ class sendRequestPathToGateways extends Event {
 	 Scenario.totalRxRouteInfoPackets++;
 	// System.out.println("receiveRouteInfo" + "(" + id.x + ", "+ id.y + ")");
 	 if(this.id.equals(packet.getSourceNode())) {
-		 System.out.println("receiveRouteInfo" + "(" + id.x + ", "+ id.y + ")"+"  packet.getRoute()  "+ packet.getRoute());
+		 System.out.println("receiveRouteInfo" + "at node (" + id.x + ", "+ id.y + ")"+"  packet.getRoute()  "+ packet.getRoute());
+		
 		 this.updateRoutingTable(packet.getRoute());
+		 
+		 // schedule the time when the route will expire
+		 
+		 
+		 if(currentDataPacket!=null) {
 		 DataPacket p = new DataPacket(currentDataPacket.getId(), currentDataPacket.getType(), currentDataPacket.getSourceNode(), currentDataPacket.getDestinationNode(), currentDataPacket.getSize(), currentDataPacket.getGenerationTime());
 		 new sendDataPacket(p).schedule(0);
 		 currentDataPacket = null;
+		 
+		 }
 		 
 	 }
 	 
@@ -674,10 +695,10 @@ class sendRequestPathToGateways extends Event {
     }
  
 */
- public static void print(ArrayList<Vehicle> array) {
-	 
+ public  void print(ArrayList<Vehicle> array) {
+	 System.out.println("Selected Gateways by node : ("+ id.x + ", " + id.y+ ")");
 	 for(int i = 0; i< array.size();i++) {
-		 System.out.println("V "+ i + "(" + array.get(i).id.x + ", " + array.get(i).id.y+ ")" + "Reachable Domains:  "+ array.get(i).reachableDomains.size());
+		 System.out.println("(" + array.get(i).id.x + ", " + array.get(i).id.y+ ")" + "  Number of Reachable Domains:  "+ array.get(i).reachableDomains.size());
 	 }
 	 
  }
@@ -723,9 +744,9 @@ class sendRequestPathToGateways extends Event {
 		 
 		 result = sortNumberOfDomains(result);
 		 domains.addAll(result.get(x).reachableDomains);
-		 System.out.println("Iteration = " + x);
+		 //System.out.println("Iteration = " + x);
 		 
-		  print(result);
+		  //print(result);
 		 
 		  
 		 for(int i = x+1; i< result.size();i++) {
@@ -768,8 +789,9 @@ class sendRequestPathToGateways extends Event {
 		 }
 	 }
 	 
-	 System.out.println("Gateway: "+output.get(0).id.x+ ", " + output.get(0).id.y + ")");
+	 //System.out.println("Gateway: "+output.get(0).id.x+ ", " + output.get(0).id.y + ")");
 	 
+	 print(output);
 	 return output;
 	 
  }
@@ -817,6 +839,7 @@ class sendRequestPathToGateways extends Event {
 	 return array.get(indexMin);
 	 
  }
+ 
  
  
  public ArrayList<Vehicle> selectGateways2(int filter){
@@ -869,8 +892,21 @@ class sendRequestPathToGateways extends Event {
 		 
 	 }
 	 
+	 ArrayList<Vehicle> newList = new ArrayList<Vehicle>(); 
+	  
+     // Traverse through the first list 
+     for (Vehicle element : output) { 
+
+         // If this element is not present in newList 
+         // then add it 
+         if (!newList.contains(element)) { 
+
+             newList.add(element); 
+         } 
+     } 
 	 
-	 return output;
+	 
+	 return newList;
  }
  
  
