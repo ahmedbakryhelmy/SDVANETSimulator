@@ -2,8 +2,6 @@ package Components;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Queue;
-
-import com.sun.xml.internal.bind.v2.runtime.reflect.Lister.Pack;
 import DataTypes.Domain;
 import DataTypes.DomainVehicleTuple;
 import DataTypes.NodeID;
@@ -22,6 +20,8 @@ Queue<Packet> routingPackets;
 DataPacket currentDataPacket;
 ArrayList<Vehicle> neigbouringCars = new ArrayList<Vehicle>();
 ArrayList<Domain> reachableDomains;
+ArrayList<Integer> txPacketsIds= new ArrayList<Integer>();
+
 int CW = 4;
 final int CWmax = 16;
 final double slotDuration = 0.02; // 0.02 ms
@@ -198,8 +198,11 @@ class sendDataPacketToDestination extends Event {
 		   Vehicle v = Scenario.getVehicle(route.getRoute().get(0));
 		   System.out.println("sendDataPacketToDestination from " + "(" + id.x + ", "+ id.y + ")"+ "To "+ "(" + v.id.x + ", "+ v.id.y + ")");
 		   //packet.setHops(packet.getHops()+1);
+		   
+		   if(!txPacketsIds.contains(packet.getId())) {
 		   v.receiveDataPacket(packet);
-
+		   txPacketsIds.add(packet.getId());
+		   }
 	      }
 	   }
 
@@ -512,7 +515,7 @@ class sendRequestPathToGateways extends Event {
 	 Scenario.totalRxRouteRequestPacket++;
 	 
 	 // to be checked
-	 if(Sim.time()-requestPathPacket.getGenerationTime() > 1) {
+	 if(Sim.time()-requestPathPacket.getGenerationTime() > 3) {
 		 return;
 	 }
 	 
@@ -557,7 +560,8 @@ class sendRequestPathToGateways extends Event {
 				 
 				 // gateways selection
 				 // sends requestPath to set of gateways
-				 ArrayList<Vehicle> gateways = selectGateways();
+				 // this is wrong .......
+				 ArrayList<Vehicle> gateways = selectGateways3();
 				 new sendRequestPath(requestPathPacket, gateways).schedule(0.02);
 				 
 			 }else {
@@ -578,6 +582,19 @@ class sendRequestPathToGateways extends Event {
 		 
 	 }
 	 
+ }
+ 
+ public ArrayList<Vehicle> selectGateways3(){
+	 
+	 ArrayList<Vehicle> result= new ArrayList<Vehicle>();
+	 for(int i = 0; i< this.neigbouringCars.size();i++) {
+		 Vehicle v = neigbouringCars.get(i);
+		 if(!v.domain.equals(this.domain)) {
+			 result.add(v);
+		 }
+	 }
+	 
+	 return result;
  }
  
 
@@ -660,6 +677,10 @@ class sendRequestPathToGateways extends Event {
 	 // we should send the packet correspondent to the requested path to its destination
 	 // also add to the routing overhead
 	 Scenario.totalRxRouteInfoPackets++;
+	 
+	 if(packet.getRoute()==null) {
+		 return;
+	 }
 	// System.out.println("receiveRouteInfo" + "(" + id.x + ", "+ id.y + ")");
 	 if(this.id.equals(packet.getSourceNode())) {
 		 System.out.println("receiveRouteInfo" + "at node (" + id.x + ", "+ id.y + ")"+"  packet.getRoute()  "+ packet.getRoute());
@@ -683,14 +704,12 @@ class sendRequestPathToGateways extends Event {
  }
  
  /*
-
  class receiveRouteInfo extends Event {
 		
 	 receiveRouteInfo() {
 		
 	}
     public void actions() {
-
        }
     }
  
@@ -703,9 +722,10 @@ class sendRequestPathToGateways extends Event {
 	 
  }
 
- public static ArrayList<Vehicle> sortNumberOfDomains(ArrayList<Vehicle> array){
-    
-	 Vehicle temp;
+ 
+ public static ArrayList<DomainVehicleTuple> sortNumberOfDomains(ArrayList<DomainVehicleTuple> array){
+	    
+	 DomainVehicleTuple temp;
 	 
 	 for(int i =1; i<array.size();i++) {
 		 
@@ -713,7 +733,7 @@ class sendRequestPathToGateways extends Event {
 		 for(int j =i; j>0;j--) {
 			 
 			 // sort in descending order
-			 if(array.get(j).reachableDomains.size() >  array.get(j-1).reachableDomains.size()) {
+			 if(array.get(j).getDomains().size() >  array.get(j-1).getDomains().size()) {
 
 				 // swap
 				 temp = array.get(j);
@@ -729,21 +749,23 @@ class sendRequestPathToGateways extends Event {
 	 
 	 return array;
 	 
- }
- 
- 
- // should be used when creating the tuples
- public ArrayList<Vehicle> selectGateways1() {
+ } 
+
+public ArrayList<Vehicle> selectGateways1() {
 	 
-	 ArrayList<Vehicle> result = new ArrayList<Vehicle>();
-	 result.addAll(neigbouringCars);
+	 ArrayList<DomainVehicleTuple> result = new ArrayList<DomainVehicleTuple>();
+	 for(int i = 0; i< neigbouringCars.size(); i++) {
+		 Vehicle v = neigbouringCars.get(i); 
+		 result.add(new DomainVehicleTuple(v, v.reachableDomains));
+	 }
+	 
 	 
 	 ArrayList<Domain> domains = new ArrayList<Domain>();
 	 
 	 for(int x = 0; x< result.size(); x++) {
 		 
 		 result = sortNumberOfDomains(result);
-		 domains.addAll(result.get(x).reachableDomains);
+		 domains.addAll(result.get(x).getDomains());
 		 //System.out.println("Iteration = " + x);
 		 
 		  //print(result);
@@ -752,7 +774,7 @@ class sendRequestPathToGateways extends Event {
 		 for(int i = x+1; i< result.size();i++) {
 			 
 			 ArrayList<Domain> temp3 = new ArrayList<Domain>();
-			 ArrayList<Domain> dom = result.get(i).reachableDomains;
+			 ArrayList<Domain> dom = result.get(i).getDomains();
 			 for(int j = 0; j<dom.size();j++) {
 				 
 				 Domain d = dom.get(j);
@@ -774,8 +796,8 @@ class sendRequestPathToGateways extends Event {
 				 
 			 }
 			 
-			 result.get(i).reachableDomains.removeAll(result.get(i).reachableDomains);
-			 result.get(i).reachableDomains.addAll(temp3);
+			 result.get(i).getDomains().removeAll(result.get(i).getDomains());
+			 result.get(i).getDomains().addAll(temp3);
 
 		 }
 		 
@@ -784,17 +806,18 @@ class sendRequestPathToGateways extends Event {
 	 
 	 ArrayList<Vehicle> output = new ArrayList<Vehicle>();
 	 for(int i =0; i<result.size();i++) {
-		 if(result.get(i).reachableDomains.size()>0) {
-			 output.add(result.get(i));
+		 if(result.get(i).getDomains().size()>0) {
+			 output.add(result.get(i).getVehicle());
 		 }
 	 }
 	 
 	 //System.out.println("Gateway: "+output.get(0).id.x+ ", " + output.get(0).id.y + ")");
 	 
-	 print(output);
+	// print(output);
 	 return output;
 	 
  }
+ 
  
  
 	public static boolean find(ArrayList<Domain> domains, Domain d) {
@@ -850,15 +873,27 @@ class sendRequestPathToGateways extends Event {
 	 
 	 ArrayList<Domain> reachableDomains  = new ArrayList<Domain>();
 	 for (int i = 0; i< temp.size();i++) {
-		 for(int j = 0; j<temp.get(i).reachableDomains.size();j++) {
-			 if(find(reachableDomains, temp.get(i).reachableDomains.get(j)) == false) {
-				 reachableDomains.add(temp.get(i).reachableDomains.get(j));
-			 }
-			 
-		 }
 		 
-		 
+		reachableDomains.addAll(temp.get(i).reachableDomains);			 
+		
 	 }
+		 
+		 
+	 
+	 ArrayList<Domain> tempList = new ArrayList<Domain>(); 
+	  
+     // Traverse through the first list 
+     for (Domain element : reachableDomains) { 
+
+         // If this element is not present in newList 
+         // then add it 
+         if (!tempList.contains(element)) { 
+
+             tempList.add(element); 
+         } 
+     } 
+	 
+     reachableDomains= tempList;
 	 for(int i = 0; i< reachableDomains.size();i++) {
 		 
 		 result.add(findMinDistVehicle(temp, reachableDomains.get(i)));
@@ -934,7 +969,6 @@ class sendRequestPathToGateways extends Event {
  
 
 }
-
 
 
 

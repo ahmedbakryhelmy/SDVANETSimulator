@@ -13,7 +13,7 @@ public class Scenario {
 static	ArrayList<NodeID> sendingNodes = new ArrayList<NodeID> ();
 static ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
 static int counter = 0;
-static int gatewaySelectionAlgorithm = 2; // 1 for the new one and 2 for the old one
+static int gatewaySelectionAlgorithm = 1; // 1 for the new one and 2 for the old one
 static int gatewaysFilter = 1;
 static double txDataBytes = 0;
 static double txDataPacketsDelay = 0;
@@ -114,8 +114,8 @@ public static Vehicle  initializeRoad() {
 		
 		c00.neigbouringCars = new ArrayList<Vehicle> () {{ add(c12); add(c30);}};
 		c12.neigbouringCars = new ArrayList<Vehicle> () {{ add(c00); add(c30); add(c33);}};
-		c30.neigbouringCars = new ArrayList<Vehicle> () {{ add(c00); add(c12); add(c33);}};
-		c33.neigbouringCars = new ArrayList<Vehicle> () {{ add(c12); add(c30); add(c43); add(c36); add(c45);}};
+		c30.neigbouringCars = new ArrayList<Vehicle> () {{ add(c00); add(c12); add(c33);add(c50);}};
+		c33.neigbouringCars = new ArrayList<Vehicle> () {{ add(c12); add(c30);add(c43); add(c45); add(c36);}};
 		
 		c07.neigbouringCars = new ArrayList<Vehicle> () {{add(c16); add(c27); }};
 		c16.neigbouringCars = new ArrayList<Vehicle> () {{add(c07); add(c27); add(c36); }};
@@ -187,6 +187,11 @@ public static Vehicle  initializeRoad() {
 		rc43.setRoute(new ArrayList<NodeID>() {{add(c73.id);}});
 		c43.routingTable.add(rc43);
 		
+		Route rc30 = new Route();
+		rc30.setNodeID(c47.id);
+		rc30.setRoute(new ArrayList<NodeID>() {{add(c73.id);}});
+		c30.routingTable.add(rc30);
+		
 		//Route r3 = new Route();
 		//Route r4 = new Route();
 
@@ -209,6 +214,7 @@ public static Vehicle  initializeRoad() {
 		*/
 		
 		Vehicle c33 = Scenario.vehicles.get(3);
+		Vehicle c30 = Scenario.vehicles.get(2);
 		Vehicle c12 = Scenario.vehicles.get(1);
 		Vehicle c73 = Scenario.vehicles.get(15);
 		Vehicle c27 = Scenario.vehicles.get(6);
@@ -219,24 +225,24 @@ public static Vehicle  initializeRoad() {
 		//c12.testFunction(c12.id);
 		x.simulate(50);
 		//c33.updateRoutingTable(c33.isrouteAvailable(c73.id));
-		DataPacket packet = new DataPacket(Scenario.counter++, 1, c12.id, c73.id, 1250 ,0);
+		DataPacket packet = new DataPacket(Scenario.counter++, 1, c33.id, c73.id, 1250 ,0);
 		DataPacket packet2 = new DataPacket(Scenario.counter++, 1, c12.id, c73.id, 1250 ,3);
-		DataPacket packet3 = new DataPacket(Scenario.counter++, 1, c12.id, c73.id, 1250 ,6);
+		DataPacket packet3 = new DataPacket(Scenario.counter++, 1, c33.id, c73.id, 1250 ,6);
 		//packet.setRoute(c33.isrouteAvailable(c73.id));
-		c12.testing(0, packet);
-		c12.testing(3, packet2);
-		c12.testing(20, packet3);
+		c33.testing(0, packet);
+		c12.testing(11, packet2);
+		c33.testing(20, packet3);
 		//c33.testing(0.002);
 		
 	    Sim.start(); 
-	 /*   
-		ArrayList<Vehicle> v = c33.selectGateways2(1);
+	  
+		/*ArrayList<Vehicle> v = c33.selectGateways2(1);
 		for(int i = 0; i< v.size();i++) {
-			 System.out.println("Vehicle "+v.get(i)+"    "+ v.get(i).reachableDomains.size());
-		}
-	   */
-		//System.out.println(c73.equals(c73));
-	    
+			 System.out.println("Vehicle c"+v.get(i).id.x +v.get(i).id.y +"    "+ v.get(i).reachableDomains.size());
+		}*/
+	   
+		//System.out.println(c30+"     "+c30.reachableDomains.size());
+	   
 		
 		
 	}
