@@ -1,4 +1,5 @@
 package Components;
+import DataTypes.Domain;
 import DataTypes.NodeID;
 import DataTypes.Route;
 
@@ -12,7 +13,8 @@ public class Packet {
 	private double generationTime;
 	private Route route;
 	private int hops;
-	public Packet(int id, int type, NodeID sourceNode, NodeID destinationNode, int size, double generationTime) {
+	private Domain sourceDomain;
+	public Packet(int id, int type, NodeID sourceNode, NodeID destinationNode, int size, double generationTime, Domain domain) {
 	
 		this.setId(id);
 		this.setDestinationNode(destinationNode);
@@ -21,6 +23,7 @@ public class Packet {
 		this.setSourceNode(sourceNode);
 		this.setSize(size);
 		this.setHops(0);
+		this.setSourceDomain(domain);
 		
 	}
 	
@@ -80,6 +83,16 @@ public class Packet {
 
 	public void setHops(int hops) {
 		this.hops = hops;
+	}
+
+
+	public Domain getSourceDomain() {
+		return sourceDomain;
+	}
+
+
+	public void setSourceDomain(Domain sourceDomain) {
+		this.sourceDomain = sourceDomain;
 	}
 	
 }
